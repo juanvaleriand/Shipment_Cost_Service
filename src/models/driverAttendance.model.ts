@@ -8,14 +8,13 @@ import {
   ForeignKey,
   BelongsTo,
 } from "sequelize-typescript";
-import { Driver } from "./driver";
-import { Shipment } from "./shipment";
+import { Driver } from "./driver.model";
 
 @Table({
-  tableName: "shipment_costs",
+  tableName: "driver_attendances",
   timestamps: false,
 })
-export class ShipmentCost extends Model<ShipmentCost> {
+export class DriverAttendance extends Model<DriverAttendance> {
   @PrimaryKey
   @AutoIncrement
   @Column({
@@ -27,38 +26,25 @@ export class ShipmentCost extends Model<ShipmentCost> {
   @ForeignKey(() => Driver)
   @Column({
     type: DataType.STRING(255),
-    allowNull: true,
+    allowNull: false,
   })
   driver_code!: string;
 
-  @ForeignKey(() => Shipment)
   @Column({
-    type: DataType.STRING(255),
-    allowNull: true,
-  })
-  shipment_no!: string;
-
-  @Column({
-    type: DataType.DECIMAL(10, 2),
+    type: DataType.DATEONLY,
     allowNull: false,
   })
-  total_costs!: number;
+  attendance_date!: Date;
 
   @Column({
     type: DataType.STRING(255),
     allowNull: false,
   })
-  cost_status!: string;
+  attendance_status!: string;
 
   @BelongsTo(() => Driver, {
     foreignKey: "driver_code",
     targetKey: "driver_code",
   })
   driver!: Driver;
-
-  @BelongsTo(() => Shipment, {
-    foreignKey: "shipment_no",
-    targetKey: "shipment_no",
-  })
-  shipment!: Shipment;
 }

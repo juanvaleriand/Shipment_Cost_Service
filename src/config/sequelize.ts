@@ -1,9 +1,9 @@
 import { Sequelize } from "sequelize-typescript";
-import { Driver } from "../models/driver";
-import { DriverAttendance } from "../models/driverAttendance";
-import { Shipment } from "../models/shipment";
-import { ShipmentCost } from "../models/shipmentCost";
-import { VariableConfig } from "../models/variableConfig";
+import { Driver } from "../models/driver.model";
+import { DriverAttendance } from "../models/driverAttendance.model";
+import { Shipment } from "../models/shipment.model";
+import { ShipmentCost } from "../models/shipmentCost.model";
+import { VariableConfig } from "../models/variableConfig.model";
 import dotenv from "dotenv";
 
 dotenv.config();

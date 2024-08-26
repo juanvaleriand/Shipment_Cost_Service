@@ -6,8 +6,8 @@ import {
   HasMany,
   DataType,
 } from "sequelize-typescript";
-import { DriverAttendance } from "./driverAttendance";
-import { ShipmentCost } from "./shipmentCost";
+import { DriverAttendance } from "./driverAttendance.model";
+import { ShipmentCost } from "./shipmentCost.model";
 
 @Table({
   tableName: "drivers",

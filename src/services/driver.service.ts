@@ -1,9 +1,9 @@
 import sequelize from "../config/sequelize";
-import { QueryParams } from "../controllers/driverController";
-import { Driver } from "../models/driver";
-import { DriverAttendance } from "../models/driverAttendance";
-import { ShipmentCost } from "../models/shipmentCost";
-import { VariableConfig } from "../models/variableConfig";
+import { QueryParams } from "../controllers/driver.controller";
+import { Driver } from "../models/driver.model";
+import { DriverAttendance } from "../models/driverAttendance.model";
+import { ShipmentCost } from "../models/shipmentCost.model";
+import { VariableConfig } from "../models/variableConfig.model";
 import { Filterable, Op, WhereOptions } from "sequelize";
 
 class DriverService {
