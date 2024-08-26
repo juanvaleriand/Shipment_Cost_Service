@@ -1,6 +1,6 @@
 import express from "express";
 import sequelize from "./config/sequelize";
-import driverRoutes from "./routes/driverRoutes";
+import driverRoutes from "./routes/driver.route";
 
 // Initialize express app
 const app = express();

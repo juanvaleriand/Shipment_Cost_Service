@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import DriverService from "../services/driverService";
+import DriverService from "../services/driver.service";
 
 export interface QueryParams {
   month: number;
