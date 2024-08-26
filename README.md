@@ -3,6 +3,7 @@
 ## Requirement
 
 - Node.js v18
+- Typescript
 - PostgreSQL
 
 ## How to Install
