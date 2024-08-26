@@ -1,5 +1,10 @@
 # Shipment Cost Service
 
+## Requirement
+
+- Node.js v18
+- PostgreSQL
+
 ## How to Install
 
 1. Clone repository ini:
