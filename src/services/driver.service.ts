@@ -119,15 +119,26 @@ class DriverService {
   private calculateDriverSalaries(drivers: Driver[], attendanceSalary: number) {
     return drivers
       .map((driver) => {
-        const totalPending = this.calculateTotalCost(
-          driver.shipmentCosts,
-          "PENDING"
-        );
-        const totalConfirmed = this.calculateTotalCost(
-          driver.shipmentCosts,
-          "CONFIRMED"
-        );
-        const totalPaid = this.calculateTotalCost(driver.shipmentCosts, "PAID");
+        let totalPending = 0;
+        let totalConfirmed = 0;
+        let totalPaid = 0;
+        const shipmentNoSet = new Set<string>();
+
+        driver.shipmentCosts.forEach((shipment) => {
+          shipmentNoSet.add(shipment.shipment_no);
+          const cost = parseFloat(String(shipment.total_costs));
+          switch (shipment.cost_status) {
+            case "PENDING":
+              totalPending += cost;
+              break;
+            case "CONFIRMED":
+              totalConfirmed += cost;
+              break;
+            case "PAID":
+              totalPaid += cost;
+              break;
+          }
+        });
 
         const totalAttendanceSalary =
           driver.driverAttendances.filter((a) => a.attendance_status).length *
@@ -135,9 +146,6 @@ class DriverService {
 
         const totalSalary =
           totalPending + totalConfirmed + totalPaid + totalAttendanceSalary;
-        const countShipment = new Set(
-          driver.shipmentCosts.map((s) => s.shipment_no)
-        ).size;
 
         return {
           driver_code: driver.driver_code,
@@ -147,16 +155,10 @@ class DriverService {
           total_paid: totalPaid,
           total_attendance_salary: totalAttendanceSalary,
           total_salary: totalSalary,
-          count_shipment: countShipment,
+          count_shipment: shipmentNoSet.size,
         };
       })
       .filter((driver) => driver.total_salary > 0);
-  }
-
-  private calculateTotalCost(shipmentCosts: ShipmentCost[], status: string) {
-    return shipmentCosts
-      .filter((s) => s.cost_status === status)
-      .reduce((sum, s) => sum + parseFloat(String(s.total_costs)), 0);
   }
 }
 
