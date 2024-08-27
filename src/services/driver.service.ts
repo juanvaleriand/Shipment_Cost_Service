@@ -12,31 +12,16 @@ class DriverService {
       queries;
     const offset = (current - 1) * page_size;
 
-    const attendanceSalaryConfig = await VariableConfig.findOne({
-      where: { key: "DRIVER_MONTHLY_ATTENDANCE_SALARY" },
-    });
-
-    const attendanceSalary = attendanceSalaryConfig
-      ? Number(attendanceSalaryConfig.value)
-      : 50000;
+    const attendanceSalary = await this.getAttendanceSalary();
 
     const whereDriverClause: Filterable<Driver>["where"] = {};
-
-    if (name) {
-      whereDriverClause.name = { [Op.iLike]: `%${name}%` };
-    }
-
-    if (driver_code) {
+    if (name) whereDriverClause.name = { [Op.iLike]: `%${name}%` };
+    if (driver_code)
       whereDriverClause.driver_code = { [Op.iLike]: `%${driver_code}%` };
-    }
 
     const whereShippingCostClause: Filterable<ShipmentCost>["where"] = {};
-
-    if (status) {
-      whereShippingCostClause.cost_status = {
-        [Op.iLike]: `%${status}%`,
-      };
-    }
+    if (status)
+      whereShippingCostClause.cost_status = { [Op.iLike]: `%${status}%` };
 
     const whereDriverAttendanceClause: WhereOptions = {
       attendance_date: {
@@ -57,60 +42,97 @@ class DriverService {
       },
     };
 
-    const driversPromise = Driver.findAll({
+    const [drivers, totalRow] = await Promise.all([
+      this.fetchDrivers(
+        whereDriverClause,
+        whereShippingCostClause,
+        whereDriverAttendanceClause,
+        offset,
+        page_size
+      ),
+      this.countDrivers(
+        whereDriverClause,
+        whereShippingCostClause,
+        whereDriverAttendanceClause
+      ),
+    ]);
+
+    const result = this.calculateDriverSalaries(drivers, attendanceSalary);
+
+    return {
+      data: result,
+      total_row: totalRow,
+      current,
+      page_size,
+    };
+  }
+
+  private async getAttendanceSalary() {
+    const config = await VariableConfig.findOne({
+      where: { key: "DRIVER_MONTHLY_ATTENDANCE_SALARY" },
+    });
+    return config ? Number(config.value) : 50000;
+  }
+
+  private fetchDrivers(
+    whereDriverClause: WhereOptions<Driver>,
+    whereShippingCostClause: WhereOptions<ShipmentCost>,
+    whereDriverAttendanceClause: WhereOptions<DriverAttendance>,
+    offset: number,
+    limit: number
+  ) {
+    return Driver.findAll({
       include: [
         {
           model: DriverAttendance,
           where: whereDriverAttendanceClause,
           required: true,
         },
+        { model: ShipmentCost, where: whereShippingCostClause, required: true },
+      ],
+      where: whereDriverClause,
+      offset,
+      limit,
+    });
+  }
+
+  private countDrivers(
+    whereDriverClause: WhereOptions<Driver>,
+    whereShippingCostClause: WhereOptions<ShipmentCost>,
+    whereDriverAttendanceClause: WhereOptions<DriverAttendance>
+  ) {
+    return Driver.count({
+      include: [
+        { model: ShipmentCost, where: whereShippingCostClause, required: true },
         {
-          model: ShipmentCost,
-          where: whereShippingCostClause,
+          model: DriverAttendance,
+          where: whereDriverAttendanceClause,
           required: true,
         },
       ],
       where: whereDriverClause,
-      offset,
-      limit: page_size,
-    });
-
-    const totalRowPromise = Driver.count({
-      include: [
-        {
-          model: ShipmentCost,
-          where: whereShippingCostClause,
-          required: true,
-        },
-        {
-          model: DriverAttendance,
-          where: whereDriverAttendanceClause,
-          required: true,
-        },
-      ],
       distinct: true,
       col: "driver_code",
     });
+  }
 
-    const [drivers, totalRow] = await Promise.all([
-      driversPromise,
-      totalRowPromise,
-    ]);
-
-    const result = drivers
+  private calculateDriverSalaries(drivers: Driver[], attendanceSalary: number) {
+    return drivers
       .map((driver) => {
-        const totalPending = driver.shipmentCosts
-          .filter((s) => s.cost_status === "PENDING")
-          .reduce((sum, s) => sum + parseFloat(String(s.total_costs)), 0);
-        const totalConfirmed = driver.shipmentCosts
-          .filter((s) => s.cost_status === "CONFIRMED")
-          .reduce((sum, s) => sum + parseFloat(String(s.total_costs)), 0);
-        const totalPaid = driver.shipmentCosts
-          .filter((s) => s.cost_status === "PAID")
-          .reduce((sum, s) => sum + parseFloat(String(s.total_costs)), 0);
+        const totalPending = this.calculateTotalCost(
+          driver.shipmentCosts,
+          "PENDING"
+        );
+        const totalConfirmed = this.calculateTotalCost(
+          driver.shipmentCosts,
+          "CONFIRMED"
+        );
+        const totalPaid = this.calculateTotalCost(driver.shipmentCosts, "PAID");
+
         const totalAttendanceSalary =
           driver.driverAttendances.filter((a) => a.attendance_status).length *
           attendanceSalary;
+
         const totalSalary =
           totalPending + totalConfirmed + totalPaid + totalAttendanceSalary;
         const countShipment = new Set(
@@ -129,13 +151,12 @@ class DriverService {
         };
       })
       .filter((driver) => driver.total_salary > 0);
+  }
 
-    return {
-      data: result,
-      total_row: totalRow,
-      current,
-      page_size: page_size,
-    };
+  private calculateTotalCost(shipmentCosts: ShipmentCost[], status: string) {
+    return shipmentCosts
+      .filter((s) => s.cost_status === status)
+      .reduce((sum, s) => sum + parseFloat(String(s.total_costs)), 0);
   }
 }
 
