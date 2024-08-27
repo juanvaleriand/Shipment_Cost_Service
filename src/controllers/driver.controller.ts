@@ -14,34 +14,37 @@ export interface QueryParams {
 class DriverController {
   async getDriverSalaries(req: Request, res: Response) {
     try {
-      const month = parseInt(req.query.month as string, 10);
-      const year = parseInt(req.query.year as string, 10);
-      const current = parseInt(req.query.current as string, 10) || 1;
-      const pageSize = parseInt(req.query.page_size as string, 10) || 10;
-      const driverCode = req.query.driver_code as string;
-      const status = req.query.status as "PENDING" | "CONFIRMED" | "PAID";
-      const name = req.query.name as string;
-      const queries: QueryParams = {
+      const {
         month,
         year,
-        current,
-        page_size: pageSize,
+        current = 1,
+        page_size = 10,
+        driver_code: driverCode,
+        status,
+        name,
+      } = req.query as unknown as QueryParams;
+
+      if (!month || !year) {
+        return res.status(400).json({ error: "Month and year are required" });
+      }
+
+      const queries: QueryParams = {
+        month: parseInt(month.toString(), 10),
+        year: parseInt(year.toString(), 10),
+        current: parseInt(current.toString(), 10),
+        page_size: parseInt(page_size.toString(), 10),
         driver_code: driverCode,
         status,
         name,
       };
 
-      if (!queries.month || !queries.year) {
-        return res.status(400).json({ error: "Month and year are required" });
-      }
-
       const data = await DriverService.getDriverSalaries(queries);
       return res.json(data);
     } catch (error) {
       console.error(error);
-      return res
-        .status(500)
-        .json({ error: "An error occurred while fetching driver salaries" });
+      return res.status(500).json({
+        error: "An error occurred while fetching driver salaries",
+      });
     }
   }
 }
